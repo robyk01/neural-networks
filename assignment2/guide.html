@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Guide on Neural Networks - Perceptron</title>
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  },
+  chtml: {
+    scale: 1.05
+  },
+  startup: {
+    typeset: true
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+@media print {
+    @page {
+        size: A4;
+        margin: 18mm;
+    }
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    max-width: 820px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #1f2328;
+    background-color: #ffffff;
+}
+h1, h2, h3 {
+    color: #1f2328;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: 6px; font-size: 20px; }
+h3 { font-size: 16px; border-bottom: 1px solid #eaecef; padding-bottom: 4px; }
+p { margin-bottom: 14px; font-size: 14px; }
+code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 85%;
+    background-color: #eff1f3;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+}
+pre {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 14px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.45;
+}
+pre code { background-color: transparent; padding: 0; }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0;
+    font-size: 13px;
+}
+th, td {
+    border: 1px solid #d0d7de;
+    padding: 8px 12px;
+    text-align: left;
+}
+th { background-color: #f6f8fa; font-weight: 600; }
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 4px;
+}
+blockquote {
+    border-left: 4px solid #d0d7de;
+    color: #636c76;
+    padding: 0 16px;
+    margin: 16px 0;
+}
+</style>
+</head>
+<body>
+<h2>Guide on Neural Networks</h2>
+<h3>The Perceptron</h3>
+<p>A single perceptron:
+- takes 784 inputs (MNIST image size is 28x28 = 784 pixels)
+- has 784 weights and one bias. 
+- calculates a single number <code>z = WX + b</code> (actually X * W + b since we need to match the shapes)
+- can answer a single binary question (e.g. is this digit 0 or not?)</p>
+<p>Because we need to clasify 10 digits, we can say we need 10 perceptrons in this neural network. Each one has 784 weights and 1 bias, producing score z_i. The formulas are no different because W has a shape of (784, 10) - 784 rows for each pixel and 10 columns for each different perceptron and the bias has a shape of (10,) - 10 elements for each perceptron.</p>
+<h3>The Flow</h3>
+<p><img alt="" src="file:///D:/Info/uni-notes/dl/assignment2/nn-flow.png" /></p>
+<p>We can see in the diagram that the NN has 784 input nodes (pixels of 1 image) and exactly 10 output nodes (one for each class).</p>
+<h3>Activation Function</h3>
+<p>The original Rosenblatt Perceptron used a hard step function {-1, 1} and because the derivative of that would be 0 everywhere, it can't use loss functions or gradient descent. Here we can use softmax as an activation function and cross-entropy for calculating loss, making this more like a softmax regression model (or multinomial regression model).</p>
+<p>The <strong>Softmax</strong> function converts a raw vector of logits $z = [z1, .., z_k]$ and computes a probability distribution for each of the classes $\hat{y} = [\hat{y_1}, .., \hat{y_k}]$.</p>
+<p>$$ \hat{y_i} = \frac{e^{z_i}}{\sum^k_{j=1} e^{z_j}} $$</p>
+<p>This is the equivalent to:</p>
+<pre><code class="language-py">def softmax(z):
+    z = z - np.max(z, axis=-1, keepdims=True)
+
+    expsum = np.sum(np.exp(z), axis=-1, keepdims=True)
+    return np.exp(z) / expsum
+</code></pre>
+<p><em>Note: for a stable softmax a numerical stabilization is recommended.</em></p>
+<h3>Loss Function</h3>
+<p>The Cross-Entropy function measures the difference between a model's predicted probability distribution and the true label distribution in classification.</p>
+<p>$$ \mathcal{L} = - \sum^k_{i=1} y_i \cdot log(\hat{y}_i) $$ </p>
+<p>Unlike MSE, cross-entropy produces large gradients when predictions are confidently wrong, allowing gradient descent to learn and update weights much faster.</p>
+<p>This is equivalent to:</p>
+<pre><code class="language-py">def cross_entropy(y_hat, y, eps=1e-15):
+    m = y_hat.shape[0]
+    y_hat = np.clip(y_hat, eps, 1 - eps)
+    return -1/m * np.sum(y * np.log(y_hat))
+</code></pre>
+<p><em>Note: for a stable cross-entropy clipping is recommended.</em></p>
+<h3>Gradient Descent</h3>
+<p>In modern deep learning, we minimize a scalar <strong>Loss Function</strong> (in this case Cross-Entropy) with <strong>Gradient Descent</strong>, which steps in the opposite direction of the gradient:</p>
+<p>$$w \leftarrow w - \eta \frac{\partial \mathcal{L}}{\partial w}$$</p>
+<p>The gradient of the loss function is computed by the chain rule:</p>
+<p>$$ \frac{\partial \mathcal{L}}{\partial w} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \mathcal{\hat{y}}}{\partial \hat{z}} \cdot \frac{\partial \mathcal{z}}{\partial \hat{w}} $$</p>
+<p><strong>Gradient of loss with respect to Softmax (predictions)</strong></p>
+<p>$$ \frac{\partial \mathcal{L}}{\partial \hat{y}_i} = - \frac{\partial}{\partial \hat{y}_i} \sum^k_{i=1} y_i \cdot log(\hat{y}_i) = - \frac{y_i}{\hat{y}_i}  $$</p>
+<p><strong>Gradient of Softmax with respect to z (logits)</strong>
+The gradient of the softmax function w.r.t. its raw input is a Jacobian matrix whose elements depend on whether the output index matches the logit index. I won't dive deep here.</p>
+<p>$$
+\frac{\partial \hat{y}_i}{\partial z_j} = \frac{\partial}{\partial z_j} \frac{e^{z_i}}{\sum^k_{j=1} e^{z_j}} = \begin{cases}
+    \hat{y}_i(1 - \hat{y}_i) & \text{if } i = j \text{ (diagonal elements)} \\
+    -\hat{y}_i\hat{y}_j & \text{if } i \neq j \text{ (off-diagonal elements)}
+\end{cases}
+$$</p>
+<p><strong>Gradient of logits with respect to weights</strong></p>
+<p>$$ \frac{\partial z}{\partial w} = \frac{\partial}{\partial w} w \cdot X + b = X $$</p>
+<p><strong>Applying the multivariable chain rule</strong>
+In simple 1D calculus, if $\mathcal{L}$ depends on y and y depends on z, we just multiply $\frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \mathcal{\hat{y}}}{\partial \hat{z}}$. But in Softmax, because $z_j$ is the denominator of every single output probability, changing it changes $\hat{y}_1, \hat{y}_2, .., \hat{y}_{10}$. Therefore, to find the total rate of change of the loss with respect to logits, we must sum the contributions of all 10 outputs:</p>
+<p>$$
+\frac{\partial \mathcal{L}}{\partial z_j} = \sum^{10}_{i=1} \frac{\partial \mathcal{L}}{\partial \hat{y}_i} \cdot \frac{\partial \hat{y}_i}{\partial z_j} = \underbrace{\frac{\partial \mathcal{L}}{\partial \hat{y}_j} \cdot \frac{\partial \hat{y}_j}{\partial z_j}}_{i = j} + \sum_{i \neq j}^{10} \underbrace{\frac{\partial \mathcal{L}}{\partial \hat{y}_i} \cdot \frac{\partial \hat{y}_i}{\partial z_j}}_{i \neq j}
+$$</p>
+<p>We can see that for the first term we have $i = j$ and for the second term $i \neq j$. Now we plug in $\frac{\partial \mathcal{L}}{\partial \hat{y}_i} = -\frac{y_i}{\hat{y}_i}$ and the Softmax derivatives:</p>
+<p>$$
+\begin{aligned}
+\frac{\partial \mathcal{L}}{\partial z_j} &= \left(-\frac{y_j}{\hat{y}_j}\right) \cdot \hat{y}_j(1 - \hat{y}_j) + \sum_{i \neq j}^{10} \left(-\frac{y_i}{\hat{y}_i}\right) \cdot (-\hat{y}_i \hat{y}_j) \\
+&= -y_j(1 - \hat{y}_j) + \sum_{i \neq j}^{10} y_i \hat{y}_j \\
+&= -y_j + y_j \hat{y}_j + \hat{y}_j \sum_{i \neq j}^{10} y_i \\
+&= -y_j + \hat{y}_j \left( y_j + \sum_{i \neq j}^{10} y_i \right) \\
+&= -y_j + \hat{y}_j \left( \sum_{i=1}^{10} y_i \right)
+\end{aligned}
+$$</p>
+<p>Because $y$ is a one-hot vector (exactly one class is $1$ and the rest are $0$), the sum of all target probabilities is strictly $\sum_{i=1}^{10} y_i = 1$:</p>
+<p>$$
+\frac{\partial \mathcal{L}}{\partial z_j} = \hat{y}_j - y_j
+$$</p>
+<p>Now we complete the chain rule all the way to the weights $W_j$ of the $j$-th perceptron:</p>
+<p>$$
+\frac{\partial \mathcal{L}}{\partial W_j} = \frac{\partial \mathcal{L}}{\partial z_j} \cdot \frac{\partial z_j}{\partial W_j} = (\hat{y}_j - y_j) \cdot x
+$$</p>
+<p>For a full mini-batch of $m$ samples in matrix notation, this becomes:</p>
+<p>$$ \nabla_W \mathcal{L} = \frac{1}{m} X^T (\hat{Y} - Y) $$</p>
+<p>$$ \nabla_b \mathcal{L} = \frac{1}{m} \sum_{\text{samples}} (\hat{Y} - Y) $$</p>
+<p>This is the equivalent of writing:</p>
+<pre><code class="language-py">def backward(X, y_hat, y, W, b, lr):
+    m = y_hat.shape[0]
+
+    # dout = dL/dy_hat * dy_hat/dz
+    dout = (y_hat - y) / m
+
+    # dW = dL/dy_hat * dy_hat/dz * dz/dW = dout * X
+    # X.shape = (48000, 784)
+    # dout.shape = (48000, 10)
+    dW = X.T @ dout
+
+    # sum of dout across samples
+    db = np.sum(dout, axis=0)
+
+    # gradient descent
+    W -= lr * dW
+    b -= lr * db
+
+    return W, b
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Rosenblatt Perceptron</th>
+<th>Softmax + Cross-Entropy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Update Formula</td>
+<td>$w \leftarrow w + \eta \cdot \text{error} \cdot x$</td>
+<td>$w \leftarrow w - \eta \cdot \text{error} \cdot x$</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>$\text{error} = y - \hat{y}$</td>
+<td>$\text{error} = \frac{\partial \mathcal{L}}{\partial z} = \hat{y} - y$</td>
+</tr>
+<tr>
+<td>Expanded Update</td>
+<td>$w \leftarrow w + \eta (y - \hat{y}) x$</td>
+<td>$w \leftarrow w - \eta (\hat{y} - y) x$</td>
+</tr>
+<tr>
+<td>Distribute the Minus Sign</td>
+<td>$w \leftarrow w + \eta (y - \hat{y}) x$</td>
+<td>$w \leftarrow w + \eta (y - \hat{y}) x$</td>
+</tr>
+<tr>
+<td>Prediction</td>
+<td>Hard binary steps $\hat{y} \in {-1,1}$</td>
+<td>Smooth probabiity $\hat{y} \in (0,1)$</td>
+</tr>
+<tr>
+<td>When it Updates</td>
+<td>Only on misclassified examples ($y \neq y$)</td>
+<td>Every single step (since p never reaches exact 0 or 1)</td>
+</tr>
+</tbody>
+</table>
+<p><em>The update formula coincides just because Softmax and Cross-Entropy were made for each other (Softmax uses an exponential function and CE uses a natural logarithm - the derivate cancels these out). If we used Softmax + Mean Squared Error the update formula would look like:</em>
+$$w \leftarrow w + \eta (y - \hat{y}) \cdot \hat{y}(1 - \hat{y}) \cdot x$$</p>
+<p><img alt="" src="file:///D:/Info/uni-notes/dl/assignment2/perceptron.png" />
+<em>Frank Rosenblatt with a Mark I Perceptron computer in 1958. Source: Frederic Lewis</em></p>
+</body>
+</html>

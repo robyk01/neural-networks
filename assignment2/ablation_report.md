@@ -1,8 +1,8 @@
 ## Ablation Study
 
-| Baseline (Mini-Batch SGD + CE) | Train on full data + lr decay | L2 Regularization | Mean centering | L2 + centering | Momentum + centering (50 ep) | Momentum + centering (70 ep) | Multi-Seed Weight Averaging (5 seeds) | Multi-Seed + Gamma Contrast |
-| - | - | - | - | - | - | - | - | - |
-| 0.9218 | 0.9226 | 0.9220 (Train: 0.9290) | 0.9246 (Train: 0.9327) | Train: 0.9299 | 0.9246 (Train: 0.9331) | 0.9238 (Train: 0.9356) | 0.9252 (Train: 0.9330) |  0.9262 (Train: 0.9333)
+| Baseline (Mini-Batch SGD + CE) | Train on full data + lr decay | L2 Regularization | Mean centering | L2 + centering | Momentum + centering (50 ep) | Momentum + centering (70 ep) | Multi-Seed Weight Averaging (5 seeds) | Multi-Seed + Gamma Contrast | Multi-Seed (10) + Gamma + Cosine Anneal + Micro L2 |
+| - | - | - | - | - | - | - | - | - | - |
+| 0.9218 | 0.9226 | 0.9220 (Train: 0.9290) | 0.9246 (Train: 0.9327) | Train: 0.9299 | 0.9246 (Train: 0.9331) | 0.9238 (Train: 0.9356) | 0.9252 (Train: 0.9330) | 0.9262 (Train: 0.9333) | 0.9278 (Train: 0.9362)
 
 **TL:DR**
 L2 made the model underfitting by pulling the weights back and preventing them from descending down to loss.
