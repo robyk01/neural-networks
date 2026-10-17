@@ -19,6 +19,7 @@ We can see in the diagram that the NN has 784 input nodes (pixels of 1 image) an
 The original Rosenblatt Perceptron used a hard step function {-1, 1} and because the derivative of that would be 0 everywhere, it can't use loss functions or gradient descent. Here we can use softmax as an activation function and cross-entropy for calculating loss, making this more like a softmax regression model (or multinomial regression model).
 
 The **Softmax** function converts a raw vector of logits $z = [z1, .., z_k]$ and computes a probability distribution for each of the classes $\hat{y} = [\hat{y_1}, .., \hat{y_k}]$.
+
 $$ \hat{y_i} = \frac{e^{z_i}}{\sum^k_{j=1} e^{z_j}} $$
 
 This is the equivalent to:
@@ -32,7 +33,7 @@ def softmax(z):
 *Note: for a stable softmax a numerical stabilization is recommended.*
 
 ### Loss Function 
-The Cross-Entropy function measure the difference between a model's predicted probability distribution and the true label distribution in classification.
+The Cross-Entropy function measures the difference between a model's predicted probability distribution and the true label distribution in classification.
 
 $$ \mathcal{L} = - \sum^k_{i=1} y_i \cdot log(\hat{y}_i) $$ 
 
@@ -58,10 +59,12 @@ The gradient of the loss function is computed by the chain rule:
 $$ \frac{\partial \mathcal{L}}{\partial w} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \mathcal{\hat{y}}}{\partial \hat{z}} \cdot \frac{\partial \mathcal{z}}{\partial \hat{w}} $$
 
 **Gradient of loss with respect to Softmax (predictions)**
+
 $$ \frac{\partial \mathcal{L}}{\partial \hat{y}_i} = - \frac{\partial}{\partial \hat{y}_i} \sum^k_{i=1} y_i \cdot log(\hat{y}_i) = - \frac{y_i}{\hat{y}_i}  $$
 
 **Gradient of Softmax with respect to z (logits)**
 The gradient of the softmax function w.r.t. its raw input is a Jacobian matrix whose elements depend on whether the output index matches the logit index. I won't dive deep here.
+
 $$
 \frac{\partial \hat{y}_i}{\partial z_j} = \frac{\partial}{\partial z_j} \frac{e^{z_i}}{\sum^k_{j=1} e^{z_j}} = \begin{cases}
     \hat{y}_i(1 - \hat{y}_i) & \text{if } i = j \text{ (diagonal elements)} \\
@@ -70,6 +73,7 @@ $$
 $$
 
 **Gradient of logits with respect to weights**
+
 $$ \frac{\partial z}{\partial w} = \frac{\partial}{\partial w} w \cdot X + b = X $$
 
 **Applying the multivariable chain rule**
@@ -104,7 +108,9 @@ $$
 $$
 
 For a full mini-batch of $m$ samples in matrix notation, this becomes:
+
 $$ \nabla_W \mathcal{L} = \frac{1}{m} X^T (\hat{Y} - Y) $$
+
 $$ \nabla_b \mathcal{L} = \frac{1}{m} \sum_{\text{samples}} (\hat{Y} - Y) $$
 
 This is the equivalent of writing:
