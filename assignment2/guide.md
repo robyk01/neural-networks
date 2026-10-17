@@ -144,4 +144,7 @@ def backward(X, y_hat, y, W, b, lr):
 $$w \leftarrow w + \eta (y - \hat{y}) \cdot \hat{y}(1 - \hat{y}) \cdot x$$
 
 
+![](perceptron.png)
+*Frank Rosenblatt with a Mark I Perceptron computer in 1958. Source: Frederic Lewis*
+
 
