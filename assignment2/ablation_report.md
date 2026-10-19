@@ -1,8 +1,8 @@
 ## Ablation Study
 
-| Baseline (Mini-Batch SGD + CE) | Train on full data + lr decay | L2 Regularization | Mean centering | L2 + centering | Momentum + centering (50 ep) | Momentum + centering (70 ep) | Multi-Seed Weight Averaging (5 seeds) | Multi-Seed + Gamma Contrast | Multi-Seed (10) + Gamma + Cosine Anneal + Micro L2 |
-| - | - | - | - | - | - | - | - | - | - |
-| 0.9218 | 0.9226 | 0.9220 (Train: 0.9290) | 0.9246 (Train: 0.9327) | Train: 0.9299 | 0.9246 (Train: 0.9331) | 0.9238 (Train: 0.9356) | 0.9252 (Train: 0.9330) | 0.9262 (Train: 0.9333) | 0.9278 (Train: 0.9362)
+| Baseline (Mini-Batch SGD + CE) | Train on full data + lr decay | L2 Regularization | Mean centering | L2 + centering | Momentum + centering (50 ep) | Momentum + centering (70 ep) | Multi-Seed Weight Averaging (5 seeds) | Multi-Seed + Gamma Contrast | Multi-Seed (10) + Gamma + Cosine Anneal + Micro L2 | Final Model (Gamma 0.78 + Pure SGD + Cosine LR + 10 Seeds) |
+| - | - | - | - | - | - | - | - | - | - | - |
+| 0.9218 | 0.9226 | 0.9220 (Train: 0.9290) | 0.9246 (Train: 0.9327) | Train: 0.9299 | 0.9246 (Train: 0.9331) | 0.9238 (Train: 0.9356) | 0.9252 (Train: 0.9330) | 0.9262 (Train: 0.9333) | 0.9278 (Train: 0.9362) | **0.9288** (Train: 0.9374) |
 
 **TL:DR**
 L2 made the model underfitting by pulling the weights back and preventing them from descending down to loss.
@@ -10,6 +10,7 @@ Scaling by subtracting the mean improved the test score from 0.9226 to 0.9246.
 Adding momentum (50 epochs, loss 0.2442) converged to the exact same minimum as mean centering (0.9246).
 Training longer with slower lr decay (70 epochs, loss 0.2352, train acc 0.9356) started overfitting and dropped the score to 0.9238.
 Multi-Seed Weight Averaging (averaging 5 independent runs into a single W_avg) canceled out random mini-batch jitter on borderline digits and pushed the score to 0.9252.
+Fine-tuning contrast to $\gamma = 0.78$, removing L2 to allow pure convex descent, and applying Cosine Annealing with 10-seed averaging reached a new training record (`0.9374`) and pushed the Kaggle test score to **`0.9288`** (tied for #2 among legitimate linear models).
 
 Raw SGD took 48 epochs to find the minimum.
 Mean centering cut that to 30 epochs.
@@ -200,9 +201,17 @@ Because $\gamma < 1.0$:
 * Faint pixels get amplified: $0.2^{0.7} \approx 0.32$ (a $+60\%$ contrast boost).
 * Pure background remains $0.0^{0.7} = 0.0$, and full stroke remains $1.0^{0.7} = 1.0$.
 
-Retraining the 5-seed model with this contrast boost directly helped differentiate ambiguous loops, improving my validation accuracy (`0.9203` $\to$ `0.9214`) and pushing my final Kaggle score from `0.9252` to **`0.9262`**
+Retraining the 5-seed model with this contrast boost directly helped differentiate ambiguous loops, improving my validation accuracy (`0.9203` $\to$ `0.9214`) and pushing my Kaggle score from `0.9252` to **`0.9262`**.
 
-To move beyond the ~92.6% ceiling toward 98%+, the architecture requires non-linear hidden layers (Multi-Layer Perceptrons) that can learn compositional stroke representations.
+### Final Push: Gamma 0.78, Pure SGD, and Cosine Annealing
+
+In the final submission:
+**Refined Contrast ($\gamma = 0.78$):** Tuning $\gamma$ to $0.78$ preserved stroke line geometry better than $0.70$, preventing the slight background pixel amplification while still sharpening faint loops.
+**Pure Convex Descent (Eliminating L2):** Completely removing the micro-L2 weight decay prevented artificial shrinkage of logits, allowing the 10 linear templates to maintain sharp, confident decision boundaries on borderline digits (particularly on 8 vs 0 and 8 vs 9 transitions).
+**Cosine Annealing with Warmup ($\eta = 0.10 \to 10^{-4}$):** 2 warmup epochs followed by smooth cosine decay down to $10^{-4}$ across 60 epochs allowed the optimizer to escape initial flat regions and settle precisely into the global convex optimum.
+**10-Seed Weight Averaging:** Averaging across 10 random seeds pushed training accuracy to a record **`0.9374`** and the Kaggle test score to **`0.9288`**.
+
+To move beyond the ~92.9% ceiling toward 98%+, the architecture requires non-linear hidden layers (Multi-Layer Perceptrons) that can learn compositional stroke representations.
 
 <br>
 
